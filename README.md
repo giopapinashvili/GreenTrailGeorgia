@@ -26,7 +26,7 @@ npm run build      # შემოწმება + აწყობა dist/-შ�
 - `src/pages` — გვერდები (`admin/`, `auth/`), `src/components` — კომპონენტები, `src/lib` — მონაცემები, ფორმატები, რუკის და გეო-ფუნქციები.
 - `supabase/migrations` — ბაზის სტრუქტურა და უსაფრთხოების წესები (თანმიმდევრობით).
 - `supabase/functions/plan-trip` — AI დამგეგმავის სერვერული ფუნქცია.
-- `supabase/seed` — მარშრუტების საწყისი მონაცემები (Python წყაროები `r_*.py` და მათგან აწყობილი SQL: ჯერ `sql_regions.sql`, `sql_gear.sql`, მერე `sql_routes_*.sql`, `sql_stops_*.sql`, `sql_articles.sql`). SQL-ის ხელახლა აწყობა: `python3 write_sql.py`.
+- `supabase/seed` — მარშრუტების საწყისი მონაცემები (Python წყაროები `r_*.py` და მათგან აწყობილი SQL: ჯერ `sql_regions.sql`, `sql_gear.sql`, მერე `sql_routes_*.sql`, `sql_stops_*.sql`, `sql_articles.sql`, ბოლოს `sql_covers.sql` — მარშრუტების ფოტოები Wikimedia Commons-იდან). SQL-ის ხელახლა აწყობა: `python3 write_sql.py`.
 - `docs/CONVENTIONS.md` — დიზაინის და კოდის წესები ახალი გვერდებისთვის.
 
 ## მონაცემების წყაროები

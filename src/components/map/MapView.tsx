@@ -217,14 +217,15 @@ export default function MapView({
       id: 'gt-routes-line', type: 'line', source: 'gt-routes', layout: { 'line-cap': 'round', 'line-join': 'round' },
       paint: {
         'line-color': colorExpr,
-        'line-width': ['case', ['boolean', ['feature-state', 'hover'], false], 6, ['interpolate', ['linear'], ['zoom'], 6, 2.2, 12, 4, 15, 6]],
+        // zoom must be the top-level input (MapLibre rule), so the hover case sits inside each stop
+        'line-width': ['interpolate', ['linear'], ['zoom'], 6, ['case', ['boolean', ['feature-state', 'hover'], false], 4, 2.2], 12, ['case', ['boolean', ['feature-state', 'hover'], false], 6, 4], 15, ['case', ['boolean', ['feature-state', 'hover'], false], 8, 6]],
       },
     })
     map.addLayer({ id: 'gt-routes-hit', type: 'line', source: 'gt-routes', paint: { 'line-color': '#000', 'line-opacity': 0, 'line-width': 16 } })
     map.addLayer({
       id: 'gt-starts', type: 'circle', source: 'gt-starts',
       paint: {
-        'circle-radius': ['case', ['boolean', ['feature-state', 'hover'], false], 8, ['interpolate', ['linear'], ['zoom'], 6, 4.5, 12, 7]],
+        'circle-radius': ['interpolate', ['linear'], ['zoom'], 6, ['case', ['boolean', ['feature-state', 'hover'], false], 7, 4.5], 12, ['case', ['boolean', ['feature-state', 'hover'], false], 9, 7]],
         'circle-color': colorExpr, 'circle-stroke-color': casing, 'circle-stroke-width': 2,
       },
     })

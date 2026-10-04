@@ -329,7 +329,8 @@ export default function MapView({
 
   return (
     <div ref={wrap} className={`relative overflow-hidden bg-surface-2 ${className}`}>
-      <div ref={box} className="absolute inset-0" />
+      {/* inline position: maplibre-gl.css (loaded later) sets .maplibregl-map { position: relative }, which would beat a class and collapse the map to 0px height */}
+      <div ref={box} style={{ position: 'absolute', inset: 0 }} />
       {showControls && (
         <div className="absolute right-3 top-3 z-10 flex flex-col gap-2">
           <div className="flex overflow-hidden rounded-lg border border-line-2 bg-surface shadow-card">

@@ -1,80 +1,90 @@
 import { useState } from 'react'
-import CrudTable from '../../components/admin/CrudTable'
-import Modal from '../../components/admin/Modal'
-import { guides as initial } from '../../data/mockData'
-import type { Guide } from '../../types'
+import { Link } from 'react-router-dom'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { Check, X } from 'lucide-react'
+import Avatar from '../../components/ui/Avatar'
+import Tabs from '../../components/ui/Tabs'
+import Modal from '../../components/ui/Modal'
+import { useToast } from '../../components/ui/Toast'
+import { ADMIN_OVERVIEW_KEY } from '../../components/admin/DashOverview'
+import { langLabel } from '../../components/guides/tourUtils'
+import { useRegions } from '../../lib/queries'
+import { supabase, errorText } from '../../lib/supabase'
+import { formatDate } from '../../lib/format'
+import { usePageTitle } from '../../lib/title'
+import type { GuideProfile } from '../../lib/types'
+
+type Status = GuideProfile['status']
 
 export default function AdminGuides() {
-  const [data, setData] = useState<Guide[]>(initial)
-  const [modal, setModal] = useState<'add' | 'edit' | null>(null)
-  const [form, setForm] = useState<Partial<Guide>>({})
-  const [editId, setEditId] = useState<number | null>(null)
+  usePageTitle('გიდები — ადმინი')
+  const qc = useQueryClient()
+  const toast = useToast()
+  const regions = useRegions()
+  const [tab, setTab] = useState<Status>('pending')
+  const [reject, setReject] = useState<GuideProfile | null>(null)
+  const [note, setNote] = useState('')
+  const list = useQuery({
+    queryKey: ['admin-guides'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('guide_profiles').select('*, profile:profiles!guide_profiles_user_id_fkey(id,username,display_name,avatar_url,role)').order('created_at', { ascending: false })
+      if (error) throw error
+      return (data ?? []) as unknown as GuideProfile[]
+    },
+  })
+  const rows = (list.data ?? []).filter((g) => g.status === tab)
+  const count = (s: Status) => (list.data ?? []).filter((g) => g.status === s).length
+  const regionName = (id: string) => regions.data?.find((r) => r.id === id)?.name ?? id
 
-  const openAdd = () => { setForm({ name: '', specialty: '', rating: 4.5, reviews: 0, avatar: '', type: 'individual', verified: false }); setModal('add') }
-  const openEdit = (g: Guide) => { setForm(g); setEditId(g.id); setModal('edit') }
-  const close = () => { setModal(null); setForm({}); setEditId(null) }
-
-  const save = () => {
-    if (modal === 'add') setData(d => [...d, { ...form, id: Date.now() } as Guide])
-    else setData(d => d.map(g => g.id === editId ? { ...g, ...form } as Guide : g))
-    close()
+  const setStatus = async (g: GuideProfile, status: Status, admin_note: string | null = null) => {
+    const { error } = await supabase.from('guide_profiles').update({ status, admin_note }).eq('user_id', g.user_id)
+    if (error) return toast(errorText(error), 'error')
+    qc.invalidateQueries({ queryKey: ['admin-guides'] })
+    qc.invalidateQueries({ queryKey: ['guides'] })
+    qc.invalidateQueries({ queryKey: ADMIN_OVERVIEW_KEY })
+    toast(status === 'approved' ? 'დადასტურდა — მომხმარებელს გიდის როლი მიენიჭა.' : 'სტატუსი შეიცვალა.')
   }
 
-  const del = (g: Guide) => { if (confirm(`წაშლა: ${g.name}?`)) setData(d => d.filter(x => x.id !== g.id)) }
-  const F = (k: keyof Guide) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
-    setForm(f => ({ ...f, [k]: e.target.value }))
-
   return (
-    <>
-      <CrudTable
-        data={data} title="გიდები" addLabel="+ ახალი გიდი"
-        onAdd={openAdd} onEdit={openEdit} onDelete={del}
-        searchKeys={['name', 'specialty'] as (keyof Guide)[]}
-        columns={[
-          { key: 'name', label: 'გიდი', render: g => (
-            <div className="flex items-center gap-2.5">
-              <img src={g.avatar} className="w-8 h-8 rounded-full object-cover ring-2 ring-green-500/20" />
-              <div>
-                <p className="text-white font-medium">{g.name}</p>
-                <p className="text-slate-500 text-[10px]">{g.specialty}</p>
+    <div>
+      <h1 className="text-[26px]">გიდების განაცხადები</h1>
+      <Tabs className="mt-4" tabs={[{ id: 'pending', label: 'განსახილველი', count: count('pending') }, { id: 'approved', label: 'დადასტურებული', count: count('approved') }, { id: 'rejected', label: 'უარყოფილი', count: count('rejected') }]} value={tab} onChange={setTab} />
+      <div className="mt-5 grid gap-4">
+        {rows.length === 0 && <p className="py-8 text-center text-ink-3">აქ ცარიელია.</p>}
+        {rows.map((g) => (
+          <article key={g.user_id} className="card p-5">
+            <div className="flex flex-wrap items-start gap-4">
+              {g.profile && <Avatar url={g.profile.avatar_url} name={g.profile.display_name} size={48} />}
+              <div className="min-w-0 flex-1">
+                <p className="font-semibold">{g.kind === 'company' && g.company_name ? `${g.company_name} · ` : ''}{g.profile?.display_name} {g.profile && <Link to={`/u/${g.profile.username}`} className="text-[13px] font-normal text-forest hover:underline">@{g.profile.username}</Link>}</p>
+                <p className="text-[12.5px] text-ink-3">{g.kind === 'company' ? 'კომპანია' : 'კერძო გიდი'} · განაცხადი: {formatDate(g.created_at)}{g.experience_years ? ` · ${g.experience_years} წლის გამოცდილება` : ''}</p>
+              </div>
+              <div className="flex gap-2">
+                {g.status !== 'approved' && <button onClick={() => setStatus(g, 'approved')} className="btn-primary btn-sm"><Check size={15} /> დადასტურება</button>}
+                {g.status !== 'rejected' && <button onClick={() => { setReject(g); setNote('') }} className="btn-danger btn-sm"><X size={15} /> {g.status === 'approved' ? 'გაუქმება' : 'უარყოფა'}</button>}
               </div>
             </div>
-          )},
-          { key: 'type', label: 'ტიპი', render: g => (
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold" style={{ background: g.type === 'individual' ? 'rgba(59,130,246,0.12)' : 'rgba(245,158,11,0.12)', color: g.type === 'individual' ? '#3b82f6' : '#f59e0b' }}>
-              {g.type === 'individual' ? 'ინდივიდი' : 'კომპანია'}
-            </span>
-          )},
-          { key: 'rating', label: 'რეიტინგი', render: g => <span className="text-yellow-400 font-bold">★ {g.rating} <span className="text-slate-500 font-normal">({g.reviews})</span></span> },
-          { key: 'verified', label: 'სტატუსი', render: g => (
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold" style={{ background: g.verified ? 'rgba(34,197,94,0.12)' : 'rgba(100,116,139,0.12)', color: g.verified ? '#22c55e' : '#64748b' }}>
-              {g.verified ? '✓ დამოწმებული' : 'მოლოდინში'}
-            </span>
-          )},
-        ]}
-      />
-
-      <Modal title={modal === 'add' ? 'ახალი გიდი' : 'გიდის რედაქტირება'} open={!!modal} onClose={close}>
-        <div className="space-y-3">
-          {([['name','სახელი'],['specialty','სპეციალობა'],['avatar','ავატარის URL']] as [keyof Guide,string][]).map(([k,label]) => (
-            <div key={k}>
-              <label className="text-slate-400 text-[11px] block mb-1">{label}</label>
-              <input value={String(form[k] ?? '')} onChange={F(k)} className="w-full px-3 py-2 rounded-lg text-xs text-white outline-none" style={{ background: '#060c17', border: '1px solid #1a2640' }} />
+            <p className="mt-3 whitespace-pre-line text-[14px] leading-relaxed text-ink-2">{g.about}</p>
+            <div className="mt-3 grid gap-1 text-[13px] text-ink-2 sm:grid-cols-2">
+              <p><b className="text-ink">რეგიონები:</b> {g.regions.map(regionName).join(', ') || '—'}</p>
+              <p><b className="text-ink">ენები:</b> {g.languages.map(langLabel).join(', ') || '—'}</p>
+              {g.certifications && <p><b className="text-ink">სერტიფიკატები:</b> {g.certifications}</p>}
+              <p><b className="text-ink">კონტაქტი:</b> {[g.phone, g.email, g.website, g.facebook, g.instagram].filter(Boolean).join(' · ') || '—'}</p>
             </div>
-          ))}
-          <div>
-            <label className="text-slate-400 text-[11px] block mb-1">ტიპი</label>
-            <select value={form.type ?? 'individual'} onChange={F('type')} className="w-full px-3 py-2 rounded-lg text-xs text-white outline-none" style={{ background: '#060c17', border: '1px solid #1a2640' }}>
-              <option value="individual">ინდივიდი</option>
-              <option value="company">კომპანია</option>
-            </select>
-          </div>
-        </div>
-        <div className="flex justify-end gap-2 mt-5">
-          <button onClick={close} className="px-4 py-2 rounded-lg text-xs text-slate-400 hover:text-white hover:bg-white/10 transition-all">გაუქმება</button>
-          <button onClick={save} className="px-5 py-2 rounded-lg text-xs font-semibold" style={{ background: '#22c55e', color: '#080e1a' }}>{modal === 'add' ? 'დამატება' : 'შენახვა'}</button>
-        </div>
+            {g.admin_note && <p className="mt-3 rounded-lg bg-surface-2 px-3 py-2 text-[13px]"><b>შენიშვნა:</b> {g.admin_note}</p>}
+          </article>
+        ))}
+      </div>
+      <Modal
+        open={!!reject}
+        onClose={() => setReject(null)}
+        title={reject?.status === 'approved' ? 'გიდის სტატუსის გაუქმება' : 'განაცხადის უარყოფა'}
+        size="sm"
+        footer={<><button className="btn-ghost" onClick={() => setReject(null)}>გაუქმება</button><button className="btn-danger" disabled={note.trim().length < 3} onClick={async () => { if (reject) await setStatus(reject, 'rejected', note.trim()); setReject(null) }}>დადასტურება</button></>}
+      >
+        <p className="text-[14px] text-ink-2">დაწერე მიზეზი — მომხმარებელი ნახავს და შეძლებს გასწორებას.</p>
+        <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} className="input mt-3" autoFocus />
       </Modal>
-    </>
+    </div>
   )
 }

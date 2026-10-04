@@ -2,12 +2,24 @@
 <html lang="ka">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>GreenTrail Georgia — ადმოაჰინე საქართველო</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+    <title>GreenTrail Georgia — საქართველოს სალაშქრო მარშრუტები</title>
+    <meta name="description" content="საქართველოს სალაშქრო მარშრუტები ერთ ადგილას: სირთულე, დღეები, აღჭურვილობა, გაჩერებები, რჩევები, რუკა, ბლოგი, გიდები და ტურები." />
+    <meta name="theme-color" content="#1e5134" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="GreenTrail Georgia" />
+    <meta property="og:description" content="საქართველოს სალაშქრო მარშრუტები, რჩევები, ბლოგი და AI დამგეგმავი." />
+    <script>
+      // apply saved theme before first paint (no flash)
+      (function () {
+        try {
+          var t = localStorage.getItem('gt-theme') || 'system';
+          var dark = t === 'dark' || (t === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          if (dark) document.documentElement.classList.add('dark');
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

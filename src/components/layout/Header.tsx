@@ -1,147 +1,112 @@
-import { useState } from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { Menu, X, Bell, Heart, Plus, Mountain, LogIn, LayoutDashboard, Shield, LogOut, ChevronDown } from 'lucide-react'
-import { useAuth } from '../../context/AuthContext'
+import { useEffect, useRef, useState } from 'react'
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
+import { Menu, X, Moon, Sun, MessageCircle, PenLine, LogOut, User, Settings, Shield, Bookmark } from 'lucide-react'
+import Logo from './Logo'
+import Avatar from '../ui/Avatar'
+import { useAuth } from '../../lib/auth'
+import { useTheme } from '../../lib/theme'
+import { useUnread } from '../../lib/unread'
 
-const navLinks = [
-  { label: 'მთავარი',    path: '/' },
-  { label: 'მარშრუტები',path: '/routes' },
-  { label: 'ადგილები',  path: '/hotels' },
-  { label: 'ისტორია',   path: '/community' },
-  { label: 'გიდები',    path: '/guides' },
-  { label: 'ბლოგი',     path: '/blog' },
+export const NAV = [
+  { to: '/routes', label: 'მარშრუტები' },
+  { to: '/map', label: 'რუკა' },
+  { to: '/planner', label: 'დაგეგმვა' },
+  { to: '/blog', label: 'ბლოგი' },
+  { to: '/tips', label: 'რჩევები' },
+  { to: '/guides', label: 'გიდები და ტურები' },
 ]
 
 export default function Header() {
+  const { user, profile, isAdmin, signOut } = useAuth()
+  const { resolved, toggle } = useTheme()
+  const unread = useUnread()
   const [open, setOpen] = useState(false)
-  const [userMenu, setUserMenu] = useState(false)
+  const [menu, setMenu] = useState(false)
   const { pathname } = useLocation()
-  const { user, logout } = useAuth()
   const navigate = useNavigate()
+  const menuRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => { setOpen(false); setMenu(false) }, [pathname])
+  useEffect(() => {
+    if (!menu) return
+    const fn = (e: MouseEvent) => { if (!menuRef.current?.contains(e.target as Node)) setMenu(false) }
+    document.addEventListener('mousedown', fn)
+    return () => document.removeEventListener('mousedown', fn)
+  }, [menu])
 
   return (
-    <header className="sticky top-0 z-50 border-b" style={{ background: '#080e1a', borderColor: '#1a2640' }}>
-      <div className="max-w-[1440px] mx-auto px-4 h-14 flex items-center gap-6">
-
-        {/* Logo */}
-        <Link to="/" className="flex items-center gap-2 shrink-0">
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg,#16a34a,#22c55e)' }}>
-            <Mountain size={16} className="text-white" />
-          </div>
-          <div className="leading-none">
-            <div className="font-extrabold text-sm text-white tracking-wide">GreenTrail</div>
-            <div className="font-bold text-[10px] tracking-[0.2em] uppercase" style={{ color: '#22c55e' }}>GEORGIA</div>
-          </div>
-        </Link>
-
-        {/* Desktop nav */}
-        <nav className="hidden lg:flex items-center gap-1 flex-1">
-          {navLinks.map(link => (
-            <Link key={link.path} to={link.path}
-              className={`px-3 py-1.5 rounded-md text-[13px] font-medium transition-colors ${
-                pathname === link.path ? 'text-green-400 bg-green-400/10' : 'text-slate-400 hover:text-white hover:bg-white/5'
-              }`}>
-              {link.label}
-            </Link>
+    <header className="sticky top-0 z-50 border-b border-line bg-bg/90 backdrop-blur supports-[backdrop-filter]:bg-bg/80">
+      <div className="page flex h-16 items-center gap-6">
+        <Logo />
+        <nav className="hidden flex-1 items-center gap-0.5 lg:flex" aria-label="მთავარი მენიუ">
+          {NAV.map((n) => (
+            <NavLink key={n.to} to={n.to} className={({ isActive }) => `rounded-md px-3 py-2 text-[14px] font-semibold transition-colors ${isActive ? 'text-forest' : 'text-ink-2 hover:text-ink'}`}>
+              {n.label}
+            </NavLink>
           ))}
         </nav>
-
-        {/* Right actions */}
-        <div className="hidden lg:flex items-center gap-2 ml-auto">
-          <button
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-[13px] font-semibold transition-all"
-            style={{ background: '#22c55e', color: '#080e1a' }}
-            onMouseOver={e => (e.currentTarget.style.background = '#16a34a')}
-            onMouseOut={e => (e.currentTarget.style.background = '#22c55e')}
-          >
-            <Plus size={14} /> დაამატე ისტორია
+        <div className="ml-auto flex items-center gap-1.5">
+          <button onClick={toggle} className="grid h-10 w-10 place-items-center rounded-lg text-ink-2 hover:bg-surface-2 hover:text-ink" aria-label={resolved === 'dark' ? 'ღია რეჟიმი' : 'მუქი რეჟიმი'} title={resolved === 'dark' ? 'ღია რეჟიმი' : 'მუქი რეჟიმი'}>
+            {resolved === 'dark' ? <Sun size={19} /> : <Moon size={19} />}
           </button>
-
-          <button className="w-9 h-9 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/5 transition-colors">
-            <Heart size={16} />
-          </button>
-
           {user ? (
-            <div className="relative">
-              <button
-                onClick={() => setUserMenu(!userMenu)}
-                className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-white/5 transition-colors"
-              >
-                <img src={user.avatar} alt={user.name} className="w-7 h-7 rounded-full object-cover ring-2 ring-green-500/30" />
-                <span className="text-white text-xs font-semibold max-w-24 truncate">{user.name}</span>
-                <ChevronDown size={12} className="text-slate-500" />
-              </button>
-
-              {userMenu && (
-                <>
-                  <div className="fixed inset-0 z-40" onClick={() => setUserMenu(false)} />
-                  <div className="absolute right-0 top-full mt-2 w-48 rounded-2xl overflow-hidden z-50 shadow-2xl" style={{ background: '#0f1826', border: '1px solid #1a2640' }}>
-                    <div className="px-4 py-3 border-b" style={{ borderColor: '#1a2640' }}>
-                      <p className="text-white text-xs font-semibold">{user.name}</p>
-                      <p className="text-slate-500 text-[10px]">{user.role === 'admin' ? 'ადმინი' : 'მომხმარებელი'}</p>
-                    </div>
-                    <div className="p-1.5 space-y-0.5">
-                      <button onClick={() => { navigate('/dashboard'); setUserMenu(false) }}
-                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs text-slate-300 hover:text-white hover:bg-white/5 transition-all">
-                        <LayoutDashboard size={13} className="text-green-400" /> ჩემი პანელი
-                      </button>
-                      {user.role === 'admin' && (
-                        <button onClick={() => { navigate('/admin'); setUserMenu(false) }}
-                          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs text-slate-300 hover:text-white hover:bg-white/5 transition-all">
-                          <Shield size={13} className="text-purple-400" /> ადმინ პანელი
-                        </button>
-                      )}
-                      <div className="border-t my-1" style={{ borderColor: '#1a2640' }} />
-                      <button onClick={() => { logout(); setUserMenu(false) }}
-                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs text-red-400 hover:text-red-300 hover:bg-red-400/10 transition-all">
-                        <LogOut size={13} /> გასვლა
-                      </button>
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-          ) : (
-            <Link to="/login"
-              className="flex items-center gap-2 px-4 py-2 rounded-lg text-[13px] font-semibold transition-all"
-              style={{ background: '#0f1826', color: '#94a3b8', border: '1px solid #1a2640' }}
-            >
-              <LogIn size={14} /> შესვლა
-            </Link>
-          )}
-        </div>
-
-        {/* Mobile hamburger */}
-        <button className="lg:hidden ml-auto text-slate-400 hover:text-white" onClick={() => setOpen(!open)}>
-          {open ? <X size={22} /> : <Menu size={22} />}
-        </button>
-      </div>
-
-      {/* Mobile menu */}
-      {open && (
-        <div className="lg:hidden border-t px-4 pb-4" style={{ background: '#080e1a', borderColor: '#1a2640' }}>
-          {navLinks.map(link => (
-            <Link key={link.path} to={link.path} onClick={() => setOpen(false)}
-              className={`block py-3 text-sm border-b transition-colors ${pathname === link.path ? 'text-green-400' : 'text-slate-300 hover:text-white'}`}
-              style={{ borderColor: '#1a2640' }}>
-              {link.label}
-            </Link>
-          ))}
-          <div className="mt-3 flex gap-2">
-            {user ? (
-              <button onClick={() => { navigate('/dashboard'); setOpen(false) }}
-                className="flex-1 py-2.5 rounded-lg text-sm font-semibold" style={{ background: '#22c55e', color: '#080e1a' }}>
-                ჩემი პანელი
-              </button>
-            ) : (
-              <Link to="/login" onClick={() => setOpen(false)}
-                className="flex-1 py-2.5 rounded-lg text-sm font-semibold text-center" style={{ background: '#22c55e', color: '#080e1a' }}>
-                შესვლა
+            <>
+              <Link to="/messages" className="relative grid h-10 w-10 place-items-center rounded-lg text-ink-2 hover:bg-surface-2 hover:text-ink" aria-label="მიმოწერა" title="მიმოწერა">
+                <MessageCircle size={19} />
+                {unread > 0 && <span className="absolute right-1 top-1 grid min-w-[18px] place-items-center rounded-full bg-blaze px-1 text-[10.5px] font-bold leading-[18px] text-white">{unread > 99 ? '99+' : unread}</span>}
               </Link>
-            )}
-          </div>
+              <Link to="/blog/new" className="btn-primary btn-sm hidden sm:inline-flex"><PenLine size={15} /> დაწერე</Link>
+              <div className="relative" ref={menuRef}>
+                <button onClick={() => setMenu((v) => !v)} className="ml-1 rounded-full" aria-label="ჩემი ანგარიში" aria-expanded={menu}>
+                  <Avatar url={profile?.avatar_url} name={profile?.display_name ?? user.email ?? '?'} size={34} />
+                </button>
+                {menu && (
+                  <div className="absolute right-0 top-12 w-60 animate-slide-up overflow-hidden rounded-xl border border-line bg-surface py-1.5 shadow-pop">
+                    <div className="border-b border-line px-4 pb-2.5 pt-1.5">
+                      <p className="truncate font-semibold text-ink">{profile?.display_name}</p>
+                      <p className="truncate text-[12.5px] text-ink-3">@{profile?.username}</p>
+                    </div>
+                    <MenuItem to={`/u/${profile?.username ?? ''}`} icon={<User size={16} />}>ჩემი პროფილი</MenuItem>
+                    <MenuItem to="/me" icon={<Bookmark size={16} />}>შენახული და გავლილი</MenuItem>
+                    <MenuItem to="/settings" icon={<Settings size={16} />}>პარამეტრები</MenuItem>
+                    {isAdmin && <MenuItem to="/admin" icon={<Shield size={16} />}>ადმინ პანელი</MenuItem>}
+                    <button onClick={async () => { await signOut(); navigate('/') }} className="flex w-full items-center gap-2.5 px-4 py-2 text-left text-[14px] text-hard hover:bg-surface-2">
+                      <LogOut size={16} /> გასვლა
+                    </button>
+                  </div>
+                )}
+              </div>
+            </>
+          ) : (
+            <>
+              <Link to="/login" className="btn-ghost btn-sm hidden sm:inline-flex">შესვლა</Link>
+              <Link to="/register" className="btn-primary btn-sm">რეგისტრაცია</Link>
+            </>
+          )}
+          <button onClick={() => setOpen((v) => !v)} className="grid h-10 w-10 place-items-center rounded-lg text-ink-2 hover:bg-surface-2 lg:hidden" aria-label="მენიუ" aria-expanded={open}>
+            {open ? <X size={21} /> : <Menu size={21} />}
+          </button>
         </div>
+      </div>
+      {open && (
+        <nav className="animate-fade-in border-t border-line bg-bg lg:hidden" aria-label="მობილური მენიუ">
+          <div className="page grid gap-0.5 py-3">
+            {NAV.map((n) => (
+              <NavLink key={n.to} to={n.to} className={({ isActive }) => `rounded-lg px-3 py-3 text-[15px] font-semibold ${isActive ? 'bg-surface-2 text-forest' : 'text-ink'}`}>{n.label}</NavLink>
+            ))}
+            {user && <NavLink to="/blog/new" className="mt-2 btn-primary">დაწერე პოსტი</NavLink>}
+            {!user && <NavLink to="/login" className="mt-2 btn-secondary">შესვლა</NavLink>}
+          </div>
+        </nav>
       )}
     </header>
+  )
+}
+
+function MenuItem({ to, icon, children }: { to: string; icon: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <Link to={to} className="flex items-center gap-2.5 px-4 py-2 text-[14px] text-ink hover:bg-surface-2">
+      <span className="text-ink-3">{icon}</span>{children}
+    </Link>
   )
 }

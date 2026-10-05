@@ -19,7 +19,7 @@ export function errorText(err: unknown): string {
   const msg = (err as { message?: string })?.message ?? String(err ?? '')
   const m = msg.toLowerCase()
   if (m.includes('invalid login credentials')) return 'ელ-ფოსტა ან პაროლი არასწორია.'
-  if (m.includes('email not confirmed')) return 'ჯერ დაადასტურე ელ-ფოსტა — ბმული ფოსტაზე გამოგიგზავნეთ.'
+  if (m.includes('email not confirmed')) return 'ეს ანგარიში ჯერ არ გააქტიურებულა — დარეგისტრირდი თავიდან იმავე ელ-ფოსტით.'
   if (m.includes('user already registered')) return 'ამ ელ-ფოსტით ანგარიში უკვე არსებობს.'
   if (m.includes('password should be at least')) return 'პაროლი მინიმუმ 6 სიმბოლო უნდა იყოს.'
   if (m.includes('rate limit') || m.includes('too many')) return 'ძალიან ბევრი მცდელობაა. ცოტა ხანში სცადე.'

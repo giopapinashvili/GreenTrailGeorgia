@@ -16,7 +16,7 @@ export function safeNext(raw: string | null | undefined, fallback = '/'): string
   if (!raw.startsWith('/') || raw.startsWith('//') || raw.includes('\\')) return fallback
   // eslint-disable-next-line no-control-regex
   if (/[\u0000-\u001f\u007f]/.test(raw)) return fallback
-  if (/^\/(login|register|forgot|reset-password)(?:[/?#]|$)/.test(raw)) return fallback
+  if (/^\/(login|register|forgot|reset-password|welcome)(?:[/?#]|$)/.test(raw)) return fallback
   return raw
 }
 
@@ -25,10 +25,13 @@ export function withNext(path: string, next: string): string {
   return next && next !== '/' ? `${path}?next=${encodeURIComponent(next)}` : path
 }
 
-/** Where Supabase sends people after they confirm their email. */
-export const signupRedirect = () => `${window.location.origin}/login`
+/**
+ * Where Google sends people back to. The login page finishes the sign-in and moves on to `next`
+ * (first-timers are sent to /welcome once to pick a name and username).
+ */
+export const oauthRedirect = (next: string) => `${window.location.origin}${withNext('/login', next)}`
 
-/** Error that Supabase puts into the URL after an expired or already used email link. */
+/** Error that Supabase puts into the URL after a failed Google sign-in or an expired email link. */
 export function urlAuthError(): string | null {
   if (typeof window === 'undefined') return null
   const search = new URLSearchParams(window.location.search)

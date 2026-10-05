@@ -28,6 +28,7 @@ const LoginPage = lazy(() => import('./pages/auth/LoginPage'))
 const RegisterPage = lazy(() => import('./pages/auth/RegisterPage'))
 const ForgotPage = lazy(() => import('./pages/auth/ForgotPage'))
 const ResetPage = lazy(() => import('./pages/auth/ResetPage'))
+const WelcomePage = lazy(() => import('./pages/auth/WelcomePage'))
 const AboutPage = lazy(() => import('./pages/AboutPage'))
 const AdminLayout = lazy(() => import('./pages/admin/AdminLayout'))
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'))
@@ -79,6 +80,7 @@ export default function App() {
                     <Route path="register" element={<RegisterPage />} />
                     <Route path="forgot" element={<ForgotPage />} />
                     <Route path="reset-password" element={<ResetPage />} />
+                    <Route path="welcome" element={<WelcomePage />} />
                     <Route path="about" element={<AboutPage />} />
                     <Route path="admin" element={<AdminLayout />}>
                       <Route index element={<AdminDashboard />} />

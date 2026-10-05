@@ -1,8 +1,9 @@
 import { useState, type FormEvent } from 'react'
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { LoaderCircle, LogIn } from 'lucide-react'
-import AuthShell, { AuthField, AuthNotice, PasswordInput } from '../../components/account/AuthShell'
-import { authErrorText, isEmail, PASSWORD_MAX, safeNext, signupRedirect, urlAuthError, withNext } from '../../components/account/authUtils'
+import AuthShell, { AuthField, AuthNotice, OrDivider, PasswordInput } from '../../components/account/AuthShell'
+import GoogleButton, { useGoogleEnabled } from '../../components/account/GoogleButton'
+import { authErrorText, isEmail, PASSWORD_MAX, safeNext, urlAuthError, withNext } from '../../components/account/authUtils'
 import { PageSpinner } from '../../components/ui/Spinner'
 import { useToast } from '../../components/ui/Toast'
 import { supabase } from '../../lib/supabase'
@@ -11,6 +12,13 @@ import { usePageTitle } from '../../lib/title'
 
 type Errors = { email?: string; password?: string }
 
+/** Text for the error Supabase leaves in the address after a failed Google sign-in or an old email link. */
+function linkErrorText(code: string): string {
+  if (/access_denied|cancel/i.test(code)) return 'Google-ით შესვლა შეწყდა. სცადე თავიდან.'
+  if (/expired|otp/i.test(code)) return 'ბმული აღარ მოქმედებს — ან ვადა გაუვიდა, ან უკვე გამოყენებულია. შედი ელ-ფოსტით და პაროლით.'
+  return 'შესვლა ვერ მოხერხდა. სცადე თავიდან.'
+}
+
 export default function LoginPage() {
   usePageTitle('შესვლა')
   const { user, loading } = useAuth()
@@ -18,15 +26,16 @@ export default function LoginPage() {
   const next = safeNext(params.get('next'))
   const navigate = useNavigate()
   const toast = useToast()
+  const google = useGoogleEnabled()
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [errors, setErrors] = useState<Errors>({})
   const [busy, setBusy] = useState(false)
-  const [unconfirmed, setUnconfirmed] = useState(false)
-  const [resend, setResend] = useState<'idle' | 'busy' | 'sent'>('idle')
+  const [notActive, setNotActive] = useState(false)
   const [linkError] = useState(urlAuthError)
 
+  // also covers the return from Google: the session is ready by the time loading ends
   if (loading) return <PageSpinner />
   if (user) return <Navigate to={next} replace />
 
@@ -42,30 +51,16 @@ export default function LoginPage() {
       return
     }
     setBusy(true)
-    setUnconfirmed(false)
+    setNotActive(false)
     const { error } = await supabase.auth.signInWithPassword({ email: em, password })
     setBusy(false)
     if (error) {
-      if (/email not confirmed/i.test(error.message)) {
-        setUnconfirmed(true)
-        setResend('idle')
-        return
-      }
+      // an account from the old sign-up that waited for an email link
+      if (/email not confirmed/i.test(error.message)) { setNotActive(true); return }
       toast(authErrorText(error), 'error')
       return
     }
     navigate(next, { replace: true })
-  }
-
-  const resendConfirmation = async () => {
-    setResend('busy')
-    const { error } = await supabase.auth.resend({ type: 'signup', email: email.trim(), options: { emailRedirectTo: signupRedirect() } })
-    if (error) {
-      setResend('idle')
-      toast(authErrorText(error), 'error')
-      return
-    }
-    setResend('sent')
   }
 
   return (
@@ -76,9 +71,17 @@ export default function LoginPage() {
     >
       {linkError && (
         <div className="mb-5">
-          <AuthNotice tone="warn">ბმული აღარ მოქმედებს — ან ვადა გაუვიდა, ან უკვე გამოყენებულია. შედი ელ-ფოსტით და პაროლით.</AuthNotice>
+          <AuthNotice tone="warn">{linkErrorText(linkError)}</AuthNotice>
         </div>
       )}
+
+      {google && (
+        <div className="mb-5 grid gap-5">
+          <GoogleButton next={next} label="Google-ით შესვლა" />
+          <OrDivider>ან ელ-ფოსტით</OrDivider>
+        </div>
+      )}
+
       <form onSubmit={submit} noValidate className="grid gap-4">
         <AuthField id="login-email" label="ელ-ფოსტა" error={errors.email}>
           <input
@@ -113,16 +116,9 @@ export default function LoginPage() {
           />
         </AuthField>
 
-        {unconfirmed && (
+        {notActive && (
           <AuthNotice tone="warn">
-            <p>ელ-ფოსტა ჯერ არ დაგიდასტურებია. გახსენი წერილი, რომელიც რეგისტრაციისას გამოგიგზავნეთ, და დააჭირე ბმულს.</p>
-            {resend === 'sent' ? (
-              <p className="mt-1.5 font-semibold text-forest">ახალი წერილი გაიგზავნა.</p>
-            ) : (
-              <button type="button" onClick={resendConfirmation} disabled={resend === 'busy'} className="link mt-1.5 disabled:opacity-60">
-                წერილის ხელახლა გაგზავნა
-              </button>
-            )}
+            <p>ეს ანგარიში ჯერ არ გააქტიურებულა. <Link to={withNext('/register', next)} className="link">დარეგისტრირდი თავიდან</Link> იმავე ელ-ფოსტით — ანგარიში მაშინვე ჩაირთვება, წერილის გარეშე.</p>
           </AuthNotice>
         )}
 

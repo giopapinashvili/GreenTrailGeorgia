@@ -36,6 +36,7 @@ Radius: `rounded-lg`/`rounded-xl`; shadows: `shadow-card`, `shadow-pop`.
 - `lib/commons.ts`: `commonsNear(lat,lng)` → free-licensed photos near a point (with author/licence credit).
 - `lib/storage.ts`: `uploadPhoto(bucket, folder, file)`, `removeFiles`, `uploadChatImage`, `signedChatImage`.
 - `lib/auth.tsx`: `useAuth()` → `{ user, profile, loading, isAdmin, isGuide, refreshProfile, signOut }`.
+- `components/account`: `AuthShell` (+ `AuthField`, `PasswordInput`, `AgreeRules`, `OrDivider`, `AuthNotice`), `GoogleButton` (+ `useGoogleEnabled` — hidden until Google is on in Supabase), `UsernameField`, `username.ts` (rules, suggestions, live availability). Email sign-up goes through the `register` Edge Function (account created already confirmed, no email). Google first-timers pick a name once on `/welcome` (`profiles.onboarded`, RPC `complete_profile`); the redirect lives in `Layout`.
 - `lib/md.tsx`: `<Markdown text>` (safe, small subset) and `<PlainText text>` (linkified plain text). Never use `dangerouslySetInnerHTML` with user content.
 
 ## Data rules (enforced by row-level security — the UI should match them)

@@ -1,4 +1,5 @@
 import { forwardRef, useState, type InputHTMLAttributes, type ReactNode } from 'react'
+import { Link } from 'react-router-dom'
 import { Eye, EyeOff, Info, TriangleAlert } from 'lucide-react'
 import { LogoMark } from '../layout/Logo'
 
@@ -61,6 +62,40 @@ export const PasswordInput = forwardRef<HTMLInputElement, Omit<InputHTMLAttribut
     </div>
   )
 })
+
+/** "I agree to the site rules" checkbox (the rules open in a new tab). */
+export function AgreeRules({ id, checked, error, onChange }: { id: string; checked: boolean; error?: string; onChange: (v: boolean) => void }) {
+  return (
+    <div>
+      <label className="flex cursor-pointer items-start gap-2.5 text-[14px] text-ink-2">
+        <input
+          id={id}
+          type="checkbox"
+          checked={checked}
+          onChange={(e) => onChange(e.target.checked)}
+          className="mt-1 h-4 w-4 shrink-0 accent-[rgb(var(--forest))]"
+          aria-invalid={!!error}
+          aria-describedby={error ? `${id}-msg` : undefined}
+        />
+        <span>
+          ვეთანხმები საიტის <Link to="/about#rules" target="_blank" rel="noopener" className="link">წესებს</Link> — ვწერ პატივისცემით და ვაქვეყნებ მხოლოდ საკუთარ ფოტოებს.
+        </span>
+      </label>
+      {error && <p id={`${id}-msg`} className="mt-1 text-[13px] text-hard">{error}</p>}
+    </div>
+  )
+}
+
+/** Thin line with a word in the middle ("ან"). */
+export function OrDivider({ children = 'ან' }: { children?: ReactNode }) {
+  return (
+    <div className="flex items-center gap-3 text-[12.5px] text-ink-3" role="separator">
+      <span className="h-px flex-1 bg-line" />
+      {children}
+      <span className="h-px flex-1 bg-line" />
+    </div>
+  )
+}
 
 /** Small inline message box inside auth forms. */
 export function AuthNotice({ tone = 'info', children }: { tone?: 'info' | 'warn'; children: ReactNode }) {

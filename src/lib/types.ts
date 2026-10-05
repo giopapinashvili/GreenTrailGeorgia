@@ -106,6 +106,8 @@ export interface Profile {
   home_region: string | null
   role: Role
   is_banned: boolean
+  /** false only for Google sign-ups that haven't picked their name and username yet (/welcome) */
+  onboarded: boolean
   created_at: string
 }
 
